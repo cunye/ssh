@@ -1,0 +1,12 @@
+<!DOCTYPE struts PUBLIC
+        "-//Apache Software Foundation//DTD Struts Configuration 2.0//EN"
+        "http://struts.apache.org/dtds/struts-2.0.dtd">
+<struts>
+	<package name="user" namespace="/" extends="struts-default">
+		<!-- 这里action对象的创建由spring容器管理，所以class值不能再指定具体的全路径类名，而是直接从spring容器中取，
+		这里的值为spring容器管理action的id值 -->
+		<action name="userAction" class="userAction" method="">
+			<result name="success">/index.jsp</result>
+		</action>
+	</package>
+</struts>

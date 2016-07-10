@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:aop="http://www.springframework.org/schema/aop "
+	xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+         http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+         http://www.springframework.org/schema/tx 
+         http://www.springframework.org/schema/tx/spring-tx.xsd
+         http://www.springframework.org/schema/aop 
+         http://www.springframework.org/schema/aop/spring-aop.xsd
+         http://www.springframework.org/schema/context
+         http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+	
+	<context:annotation-config/>
+	<context:component-scan base-package=""/>
+	<context:property-placeholder location="classpath:hibernate.properties"/>
+	<import resource="classpath:hibernate.cfg.xml"/>
+	<!-- <aop:aspectj-autoproxy /> -->
+	
+	<!-- 定义事务管理器 -->
+	<bean id="transactionManager" class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory"/>
+	</bean>
+	
+	<!-- 加载事务驱动 -->
+	<!-- 对@Transactional这个注解进行的驱动，这是基于注解的方式使用事物配置声明，这样在具体应用中可以指定哪些 方法使用事务-->
+	<tx:annotation-driven transaction-manager="transactionManager"
+        proxy-target-class="true" />
+
+     <!-- 事物的策略 -->
+     <tx:advice id="txAdvice" transaction-manager="transactionManager">
+        <tx:attributes>
+            <tx:method name="insert*" propagation="REQUIRED" />
+            <tx:method name="delete*" propagation="REQUIRED" />
+            <tx:method name="update*" propagation="REQUIRED" />
+            <tx:method name="select*" propagation="REQUIRED" read-only="true" />
+            <tx:method name="*" read-only="true" />
+        </tx:attributes>
+    </tx:advice>
+    
+    <!-- aop配置 -->
+    <aop:config>
+        <!-- 对满足下面表达式的(业务逻辑层)方法实施事务 -->
+        <aop:pointcut id="txPointcut"
+            expression="execution(* com.lose.ssh.service.*.*(..))" />
+        <!-- 引用上面的事务策略txAdvice -->
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="txPointcut" />
+    </aop:config>
+    
+    <!-- 声明日志记录通知 -->
+    <bean id="logInterceptor" class="com.lose.ssh.interceptor.LogInterceptor"></bean>
+    <aop:config>
+        <!-- 配置一个切面 -->
+        <aop:aspect id="point" ref="logInterceptor">
+            <!-- 配置切入点，指定切入点表达式 -->
+            <!-- 此句也可放到 aop:aspect标签外依然有效 -->
+            <aop:pointcut expression="execution(public * com.lose.ssh.service.*.*(..))"
+                id="myMethod" />
+            <!-- 应用前置通知 -->
+            <aop:before method="before" pointcut-ref="myMethod" />
+            <!-- 应用环绕通知需指定向下进行 -->
+            <aop:around method="around" pointcut-ref="myMethod" />
+            <!-- 应用后通知 -->
+            <aop:after-returning method="afterReturning" pointcut-ref="myMethod" />
+            <!-- 应用抛出异常后通知 -->
+            <aop:after-throwing method="afterThrowing" pointcut-ref="myMethod" />
+        </aop:aspect>
+    </aop:config>
+	
+	<bean name="user" class="com.lose.ssh.model.User">
+		<property name="name" value="1" />
+	</bean>
+	
+	<!-- 如果关于数据库的属性在hibernate.cfg.xml中配置了，设置hibernate.cfg.xml的location即可 -->
+	<bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="configLocation">
+			<value>classpath:hibernate.cfg.xml</value>
+		</property>
+	</bean>
+	
+	<bean id="userAction" class="com.lose.ssh.controller.UserAction" scope="prototype">
+		<property name="param" value="springControlStruts"/>
+	</bean>
+</beans>
